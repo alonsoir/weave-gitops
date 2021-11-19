@@ -17,11 +17,13 @@ import Page from "../components/Page";
 import ReconciliationGraph from "../components/ReconciliationGraph";
 import Spacer from "../components/Spacer";
 import { AppContext } from "../contexts/AppContext";
+import { useAppRemove } from "../hooks/applications";
+import { useIsAuthenticated } from "../hooks/auth";
 import { useRequestState } from "../hooks/common";
 import {
   AutomationKind,
   GetApplicationResponse,
-  RemoveApplicationResponse,
+  GitProvider,
   SyncApplicationResponse,
   UnstructuredObject,
 } from "../lib/api/applications/applications.pb";
@@ -36,22 +38,40 @@ type Props = {
 function ApplicationDetail({ className, name }: Props) {
   const { applicationsClient, linkResolver, notifySuccess } =
     React.useContext(AppContext);
-  const [authSuccess, setAuthSuccess] = React.useState(false);
+
   const [githubAuthModalOpen, setGithubAuthModalOpen] = React.useState(false);
   const [removeAppModalOpen, setRemoveAppModalOpen] = React.useState(false);
   const [reconciledObjects, setReconciledObjects] = React.useState<
     UnstructuredObject[]
   >([]);
-  const [res, loading, error, req] = useRequestState<GetApplicationResponse>();
-  const [removeRes, removeLoading, removeError, removeRequest] =
-    useRequestState<RemoveApplicationResponse>();
+
   const [syncRes, syncLoading, syncError, syncRequest] =
     useRequestState<SyncApplicationResponse>();
+  const [res, loading, error, req] = useRequestState<
+    GetApplicationResponse & { provider: GitProvider }
+  >();
+  const [removeRes, removeLoading, removeError, removeRequest] = useAppRemove();
   //for redirects
   const history = useHistory();
+  const authed = useIsAuthenticated(res?.provider);
+  const [authSuccess, setAuthSuccess] = React.useState(false);
+  const authOk = authed || authSuccess;
 
   React.useEffect(() => {
-    req(applicationsClient.GetApplication({ name, namespace: "wego-system" }));
+    const p = async () => {
+      const res = await applicationsClient.GetApplication({
+        name,
+        namespace: "wego-system",
+      });
+
+      const { provider } = await applicationsClient.ParseRepoURL({
+        url: res.application.url,
+      });
+
+      return { ...res, provider };
+    };
+
+    req(p());
   }, [name]);
 
   React.useEffect(() => {
@@ -228,21 +248,19 @@ function ApplicationDetail({ className, name }: Props) {
               </Spacer>
             </Flex>
           )}
-          {authSuccess && (
+          {authOk && (
             <Flex align center wide>
               <Spacer padding="medium">
                 <Button
                   color="secondary"
                   variant="contained"
                   onClick={() =>
-                    removeRequest(
-                      applicationsClient.RemoveApplication({
-                        name: application.name,
-                        namespace: application.namespace,
-                        //autoMerge is true as there is currently no way to remove an app with pull request
-                        autoMerge: true,
-                      })
-                    )
+                    removeRequest(res?.provider, {
+                      name: application.name,
+                      namespace: application.namespace,
+                      //autoMerge is true as there is currently no way to remove an app with pull request
+                      autoMerge: true,
+                    })
                   }
                 >
                   {removeLoading ? (

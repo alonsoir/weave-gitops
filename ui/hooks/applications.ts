@@ -8,6 +8,8 @@ import {
   ListCommitsRequest,
   ListCommitsResponse,
   ParseRepoURLResponse,
+  RemoveApplicationRequest,
+  RemoveApplicationResponse,
 } from "../lib/api/applications/applications.pb";
 import { RequestStateWithToken, useRequestState } from "./common";
 
@@ -45,6 +47,28 @@ export function useAddApplication(): AddApplicationReturnType {
       });
 
       req(applicationsClient.AddApplication(body, { headers }));
+    },
+  ];
+}
+
+export function useAppRemove(): RequestStateWithToken<
+  RemoveApplicationRequest,
+  RemoveApplicationResponse
+> {
+  const { applicationsClient, getProviderToken } = useContext(AppContext);
+  const [res, loading, error, req] = useRequestState<AddApplicationResponse>();
+
+  return [
+    res,
+    loading,
+    error,
+    (provider: GitProvider, body: AddApplicationRequest) => {
+      const token = getProviderToken(provider);
+      const headers = new Headers({
+        [providerTokenHeaderName]: `token ${token}`,
+      });
+
+      req(applicationsClient.RemoveApplication(body, { headers }));
     },
   ];
 }
