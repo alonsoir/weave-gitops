@@ -22,6 +22,7 @@ type InstallParams struct {
 	Namespace    string
 	DryRun       bool
 	AppConfigURL string
+	Version      string
 }
 
 func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
@@ -67,12 +68,11 @@ func (g *Gitops) Install(params InstallParams) (map[string][]byte, error) {
 			return nil, fmt.Errorf("could not apply App CRD: %w", err)
 		}
 
-		version := version.Version
-		if os.Getenv("IS_TEST_ENV") != "" {
-			version = "latest"
+		if os.Getenv("IS_TEST_ENV") != "" || params.Version == version.DefaultVersion {
+			params.Version = "latest"
 		}
 
-		wegoAppManifests, err := manifests.GenerateWegoAppManifests(manifests.WegoAppParams{Version: version, Namespace: params.Namespace})
+		wegoAppManifests, err := manifests.GenerateWegoAppManifests(manifests.WegoAppParams{Version: params.Version, Namespace: params.Namespace})
 		if err != nil {
 			return nil, fmt.Errorf("error generating wego-app manifests, %w", err)
 		}

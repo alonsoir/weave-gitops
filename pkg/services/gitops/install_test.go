@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,6 +19,8 @@ import (
 	"github.com/weaveworks/weave-gitops/pkg/kube/kubefakes"
 	"github.com/weaveworks/weave-gitops/pkg/logger/loggerfakes"
 	"github.com/weaveworks/weave-gitops/pkg/services/gitops"
+	appsv1 "k8s.io/api/apps/v1"
+	"sigs.k8s.io/yaml"
 )
 
 var (
@@ -229,5 +232,24 @@ var _ = Describe("Install", func() {
 			Expect(fakeGit.WriteCallCount()).Should(Equal(0), "With dry-run and app-config-url nothing should be written to git")
 		})
 	})
+	Context("when no version is specified", func() {
+		It("populates `latest` as the container tag version when no version is present", func() {
+			params := gitops.InstallParams{Version: "v0.0.0"}
+			manifests, err := gitopsSrv.Install(params)
+			Expect(err).ToNot(HaveOccurred())
 
+			appManifests := strings.Split(string(manifests["wego-app.yaml"]), "---")
+
+			for _, m := range appManifests {
+				if strings.Contains(string(m), "kind: Deployment") {
+					d := appsv1.Deployment{}
+
+					err := yaml.Unmarshal([]byte(m), &d)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(d.Spec.Template.Spec.Containers[0].Image).To(Equal("ghcr.io/weaveworks/wego-app:latest"))
+				}
+			}
+		})
+	})
 })

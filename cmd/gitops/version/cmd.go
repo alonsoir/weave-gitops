@@ -2,6 +2,7 @@ package version
 
 import (
 	"fmt"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/weaveworks/go-checkpoint"
 	"github.com/weaveworks/weave-gitops/pkg/flux"
@@ -11,8 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const DefaultVersion = "v0.0.0"
+
 // The current wego version
-var Version = "v0.0.0"
+var Version = DefaultVersion
 var GitCommit = ""
 var Branch = ""
 var BuildTime = ""
