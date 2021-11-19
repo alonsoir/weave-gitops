@@ -14,7 +14,7 @@ spec:
       containers:
         - name: wego-app
           image: ghcr.io/weaveworks/wego-app:{{.Version}}
-          args: ["ui", "run", "-l"]
+          args: ["ui", "run"]
           ports:
             - containerPort: 9001
               protocol: TCP
