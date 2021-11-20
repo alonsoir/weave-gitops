@@ -36,7 +36,7 @@ type Props = {
 };
 
 function ApplicationDetail({ className, name }: Props) {
-  const { applicationsClient, linkResolver, notifySuccess } =
+  const { applicationsClient, linkResolver, notifySuccess, navigate } =
     React.useContext(AppContext);
 
   const [githubAuthModalOpen, setGithubAuthModalOpen] = React.useState(false);
@@ -148,7 +148,9 @@ function ApplicationDetail({ className, name }: Props) {
           <Button
             color="secondary"
             variant="contained"
-            onClick={() => setRemoveAppModalOpen(true)}
+            onClick={() =>
+              navigate.internal(PageRoute.ApplicationRemove, { name })
+            }
           >
             Remove App
           </Button>

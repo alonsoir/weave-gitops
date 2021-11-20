@@ -1,9 +1,13 @@
+import _ from "lodash";
 import { useContext, useEffect, useState } from "react";
+import { getProviderToken } from "..";
 import { AppContext } from "../contexts/AppContext";
 import {
   AddApplicationRequest,
   AddApplicationResponse,
   Application,
+  GetApplicationRequest,
+  GetApplicationResponse,
   GitProvider,
   ListCommitsRequest,
   ListCommitsResponse,
@@ -32,8 +36,16 @@ type AddApplicationReturnType = RequestStateWithToken<
   AddApplicationResponse
 >;
 
+function makeHeaders(tokenGetter: () => string) {
+  const token = tokenGetter();
+  console.log(token);
+  return new Headers({
+    [providerTokenHeaderName]: `token ${token}`,
+  });
+}
+
 export function useAddApplication(): AddApplicationReturnType {
-  const { applicationsClient, getProviderToken } = useContext(AppContext);
+  const { applicationsClient } = useContext(AppContext);
   const [res, loading, error, req] = useRequestState<AddApplicationResponse>();
 
   return [
@@ -41,11 +53,7 @@ export function useAddApplication(): AddApplicationReturnType {
     loading,
     error,
     (provider: GitProvider, body: AddApplicationRequest) => {
-      const token = getProviderToken(provider);
-      const headers = new Headers({
-        [providerTokenHeaderName]: `token ${token}`,
-      });
-
+      const headers = makeHeaders(_.bind(getProviderToken, this, provider));
       req(applicationsClient.AddApplication(body, { headers }));
     },
   ];
@@ -55,7 +63,7 @@ export function useAppRemove(): RequestStateWithToken<
   RemoveApplicationRequest,
   RemoveApplicationResponse
 > {
-  const { applicationsClient, getProviderToken } = useContext(AppContext);
+  const { applicationsClient } = useContext(AppContext);
   const [res, loading, error, req] = useRequestState<AddApplicationResponse>();
 
   return [
@@ -63,11 +71,8 @@ export function useAppRemove(): RequestStateWithToken<
     loading,
     error,
     (provider: GitProvider, body: AddApplicationRequest) => {
-      const token = getProviderToken(provider);
-      const headers = new Headers({
-        [providerTokenHeaderName]: `token ${token}`,
-      });
-
+      const headers = makeHeaders(_.bind(getProviderToken, this, provider));
+      console.log(headers);
       req(applicationsClient.RemoveApplication(body, { headers }));
     },
   ];
@@ -87,13 +92,22 @@ export function useListCommits(): ListCommitsReturnType {
     loading,
     error,
     (provider: GitProvider, body: ListCommitsRequest) => {
-      const token = getProviderToken(provider);
-      const headers = new Headers({
-        [providerTokenHeaderName]: `token ${token}`,
-      });
-
+      const headers = makeHeaders(_.bind(getProviderToken, this, provider));
       req(applicationsClient.ListCommits(body, { headers }));
     },
+  ];
+}
+
+export function useAppGet() {
+  const { applicationsClient } = useContext(AppContext);
+  const [res, loading, error, req] = useRequestState<GetApplicationResponse>();
+
+  return [
+    res,
+    loading,
+    error,
+    (body: GetApplicationRequest) =>
+      req(applicationsClient.GetApplication(body)),
   ];
 }
 
